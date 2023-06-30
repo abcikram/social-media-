@@ -18,13 +18,12 @@ const commentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
+  }, {
+    timestamps:true,
   }
 );
 
-const Comment = mongoose.model('comment', commentSchema);
+const  commentModel = mongoose.model('comment', commentSchema);
 
-module.exports = Comment;
+
+export default commentModel

@@ -6,6 +6,7 @@ import { isValidObjectId } from "mongoose";
 import { imagekit } from "../config/ImageKit.js";
 
 
+
 //++++++++++++++++++++++++++++++++++++++++++++ user-Register +++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 export const userRegister = async(req,res) =>{
@@ -113,7 +114,7 @@ export const updateProfile = async (req, res) => {
         
         const {password,profilePicture} = req.body;
         let files = req.files
-        console.log(files);
+        // console.log(files);
 
         //authorization:-
         if (userIdByParam !== userIdFromToken) {
@@ -125,30 +126,67 @@ export const updateProfile = async (req, res) => {
             const newPassword = await bcrypt.hash(password, salt);
             req.body.password = newPassword;
         }
-        if(profilePicture){
-              if(files.length === 0) return res.status(400).json({status:false, message : "user photo is required"})
-              
-              if(files.length > 0){
-                let validImage = files[0].mimetype.split("/");
-                console.log("validImage",validImage);
+ 
+        if (files.length > 0) {
+            let image = files[0];
+            
+            if (image === undefined) {
+                return res.status(400).send({
+                    status: false,
+                    message: "Please Provide A File To Update...",
+                });
+            }
+            console.log("image",image);
+            if (image) {
+                let validImage = image.mimetype.split("/");
                 if (validImage[0] != "image") {
                     return res
-                      .status(400)
-                      .send({ status: false, message: "Please Provide Valid Image.." });
-                  }
+                        .status(400)
+                        .send({ status: false, message: "Please Provide Valid Image.." });
+                }
+                
 
-                let uploadFile = await  imagekit.upload({
-                    file : files, //required
-                    fileName : validImage.originalname, //required
+               
+                let uploadFile = await imagekit.upload({
+                    file: image.buffer, //required
+                    fileName : image.originalname, //required
                    
-                  }, function(error, result) {
-                    if(error) console.log(error);
-                    else console.log(result);
-                  });
-              }
+                  })
+                console.log("uploadFile",uploadFile);
+
+                let url = await uploadFile;
+                req.body.profilePicture = url;
+            }
+        }
+       
+        //     //  if(files.length === 0) return res.status(400).json({status:false, message : "user photo is required"})
+        // if (profilePicture) {
+        //     const validImage = profilePicture.mimetype.split("/");
+            
+        //     console.log("validImage", validImage);
+
+        //     if (validImage[0] != "image") {
+        //         return res
+        //             .status(400)
+        //             .send({ status: false, message: "Please provide a valid image" });
+        //     }
+              
+
+        //         let uploadFile = await imagekit.upload({
+        //             file : files, //required
+        //             fileName : validImage.originalname, //required
+                   
+        //           }, function(error, result) {
+        //             if(error) console.log(error);
+        //             else console.log(result);
+        //         });
+        //             console.log(uploadFile);
+        //           req.body.profilePicture = uploadFile
+        //     }
+            
                 
               
-        }
+        
 
         const userUpdate = await userModel.findByIdAndUpdate(userIdByParam, {
             $set:req.body
@@ -176,7 +214,8 @@ export const getProfile = async (req, res) => {
         
         //authorization:-
        if(userIdByParam !== userIdFromToken) {
-           return res.status(400).json({ status: false, message: "Unauthorize user"})
+          
+         res.status(403).json({ status: false, message: "unaothorize access" })
         }
 
         const user = await userModel.findById(userIdByParam);
@@ -185,7 +224,7 @@ export const getProfile = async (req, res) => {
 
         res.status(200).json({status:true,data:other});
     } catch (err) {
-      res.status(500).json(err);
+        return res.status(500).json({ status: false, message: error.message });
     }
   }
 
