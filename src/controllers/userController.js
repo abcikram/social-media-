@@ -3,7 +3,10 @@ import { validationResult } from "express-validator";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { isValidObjectId } from "mongoose";
-import { imagekit } from "../config/ImageKit.js";
+
+import ImageKit from "imagekit";
+
+
 
 
 
@@ -108,13 +111,15 @@ export const updateProfile = async (req, res) => {
 
         const error = validationResult(req);
 
+
+
         if (!error.isEmpty()) {
             return res.status(400).json({ errors: error.array()[0].msg });
         }
         
         const {password,profilePicture} = req.body;
-        let files = req.files
-        // console.log(files);
+        let files = req.file
+        console.log('file',files);
 
         //authorization:-
         if (userIdByParam !== userIdFromToken) {
@@ -126,9 +131,18 @@ export const updateProfile = async (req, res) => {
             const newPassword = await bcrypt.hash(password, salt);
             req.body.password = newPassword;
         }
+
+        const imagekit = new ImageKit({
+            publicKey:  'public_D7mlT470io9+XU3X7NxIqppBRS4=',
+            privateKey : "private_RAnLtGjFC2SsAz6aOZ9g4/N2308=",
+            urlEndpoint :"https://ik.imagekit.io/oxtdhgpbm/"
+        });
+        
  
-        if (files.length > 0) {
-            let image = files[0];
+        if (files) {
+            let image = files;
+
+            console.log(image);
             
             if (image === undefined) {
                 return res.status(400).send({
@@ -136,27 +150,16 @@ export const updateProfile = async (req, res) => {
                     message: "Please Provide A File To Update...",
                 });
             }
-            console.log("image",image);
-            if (image) {
-                let validImage = image.mimetype.split("/");
-                if (validImage[0] != "image") {
-                    return res
-                        .status(400)
-                        .send({ status: false, message: "Please Provide Valid Image.." });
-                }
-                
 
-               
                 let uploadFile = await imagekit.upload({
-                    file: image.buffer, //required
-                    fileName : image.originalname, //required
-                   
+                    file: image, //required
+                    fileName : 'rtr.jpg', //required
+                   folder:'users/profile'
                   })
                 console.log("uploadFile",uploadFile);
 
                 let url = await uploadFile;
                 req.body.profilePicture = url;
-            }
         }
        
         //     //  if(files.length === 0) return res.status(400).json({status:false, message : "user photo is required"})

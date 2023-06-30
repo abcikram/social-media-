@@ -4,6 +4,9 @@ const router = express.Router();
 import { deleteProfile, loginUser, updateProfile, userRegister,userFollow, userUnFollow, getProfile } from "../controllers/userController.js";
 import { user_authentication } from "../middleware/auth.js";
 import { registerUserValidator , updateUserValidator} from "../middleware/userValidators.js";
+import multer from "multer";
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 //user register :-
 router.post("/register",registerUserValidator,userRegister);
@@ -33,11 +36,11 @@ router.post(
 router.get('/get/:userId',user_authentication,getProfile)
 
 //user update profile :-
-router.put("/update/:userId",user_authentication,updateUserValidator,updateProfile);
+router.put("/update/:userId",upload.single('file'),user_authentication,updateUserValidator,updateProfile);
 
 
 //user delete profile :-
-router.delete("/delete/:userId",user_authentication,deleteProfile);
+router.delete("/delete/:userId",user_authentication,upload.single('file'),deleteProfile);
 
 //user follow another user :-
 router.put('/:userId/follow',user_authentication,[

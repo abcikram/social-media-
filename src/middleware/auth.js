@@ -20,7 +20,7 @@ export const user_authentication = function (req, res, next) {
         else {
             jwt.verify(splitToken[1],process.env.JWT_TOKEN, function (err, data) {
                 if (err) {
-                    return res.status(400).json({ status: false, message: err.message });
+                    return res.status(401).json({ status: false, message: err.message });
                 } else {
                     req.userId = data.userId;
                      next();    
