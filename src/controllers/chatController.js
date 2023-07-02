@@ -1,5 +1,6 @@
 import { validationResult } from "express-validator";
 import chatModel from "../models/chatModel.js";
+import { isValidObjectId } from "mongoose";
 
 //createChat :-
 export const createChat = async(req,res) =>{
@@ -12,7 +13,7 @@ export const createChat = async(req,res) =>{
         const {firstId, secondId} = req.body;
         
         const chat = await chatModel.findOne({
-        members:{$and :[firstId,secondId]}
+        members:{$all :[firstId,secondId]}
         }) 
 
         if(chat) return res.status(200).json(chat)
@@ -42,7 +43,7 @@ export const findUserChat = async(req,res) =>{
         //if the ID exists in any of the members then let's return at
         const chats = await chatModel.find({
             members:{$in:[userId]}
-        })
+        }).sort({lastMessage:-1})
         
         res.status(201).json(chats)
     } catch (error) {
@@ -64,7 +65,7 @@ export const findChat = async(req,res) => {
     
     //In members Array we find contain firstId and secondId
     const chat = await chatModel.findOne({
-        members:{$and :[firstId,secondId]}
+        members:{$all :[firstId,secondId]}
     })
 
     res.status(200).json(chat)

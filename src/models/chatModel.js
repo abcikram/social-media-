@@ -1,7 +1,11 @@
 import mongoose from "mongoose"
 
 const chatSchema = new mongoose.Schema({
-    members :Array,
+    members: Array,
+    lastMessage: {
+        type: Date,
+        default: null,
+    }
 },{
     timestamps:true,
 })

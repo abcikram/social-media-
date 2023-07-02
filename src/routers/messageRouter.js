@@ -5,21 +5,20 @@ const router = express.Router();
 
 
 //create message :-
-router.post('/create',createMessage)
+router.post('/create',
+    [
+        body('chatId').notEmpty().withMessage('ChatId is required')
+            .isMongoId().withMessage('chatId is not valid'),
+        body('senderId').notEmpty().withMessage('senderId is required')
+            .isMongoId().withMessage('senderId is not valid'),
+], createMessage)
 
 
 //get message :-
-router.get('/get/:chatId',getMessage)
-
-
-
-
-
-
-
-
-
-
+router.get('/get/:chatId', [
+    param('chatId').isMongoId().withMessage('chatId is not valid'),
+]
+, getMessage)
 
 
 

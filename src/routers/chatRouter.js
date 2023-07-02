@@ -5,7 +5,7 @@ import { createChat, findChat, findUserChat } from "../controllers/chatControlle
 const router = express.Router();
 
 //createChat :- 
-router.post('/create',[
+router.post('/',[
     body('firstId').notEmpty().withMessage('firstId is required')
         .isMongoId().withMessage("firstId is not valid"),
     body('secondId').notEmpty().withMessage("second Id is required")
@@ -13,14 +13,14 @@ router.post('/create',[
 ],createChat)
 
 //findUserChat :-
-router.get('get/:userId',[
+router.get('/:userId',[
     param('userId').notEmpty().withMessage('userId is required')
     .isMongoId().withMessage("userId is not valid"),
-],findUserChat)
+],findUserChat) 
 
 
 //findChat :-
-router.get('get/:firstId/:secondId',[
+router.get('/get/:firstId/:secondId',[
     param('firstId').notEmpty().withMessage('firstId is required')
         .isMongoId().withMessage("firstId is not valid"),
     param('secondId').notEmpty().withMessage("second Id is required")
