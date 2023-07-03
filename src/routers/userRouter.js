@@ -1,15 +1,26 @@
 import express from "express";
 import { body } from "express-validator";
 const router = express.Router();
-import { deleteProfile, loginUser, updateProfile, userRegister,userFollow, userUnFollow, getProfile } from "../controllers/userController.js";
+import {
+  deleteProfile,
+  loginUser,
+  updateProfile,
+  userRegister,
+  userFollow,
+  userUnFollow,
+  getProfile,
+} from "../controllers/userController.js";
 import { user_authentication } from "../middleware/auth.js";
-import { registerUserValidator , updateUserValidator} from "../middleware/userValidators.js";
+import {
+  registerUserValidator,
+  updateUserValidator,
+} from "../middleware/userValidators.js";
 import multer from "multer";
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 //user register :-
-router.post("/register",registerUserValidator,userRegister);
+router.post("/register", registerUserValidator, userRegister);
 
 // user Login :-
 router.post(
@@ -31,27 +42,51 @@ router.post(
   loginUser
 );
 
-
-
-router.get('/get/:userId',user_authentication,getProfile)
+router.get("/get/:userId", user_authentication, getProfile);
 
 //user update profile :-
-router.put("/update/:userId",upload.single('file'),user_authentication,updateUserValidator,updateProfile);
-
+router.put(
+  "/update/:userId",
+  upload.single("file"),
+  user_authentication,
+  updateUserValidator,
+  updateProfile
+);
 
 //user delete profile :-
-router.delete("/delete/:userId",user_authentication,upload.single('file'),deleteProfile);
+router.delete(
+  "/delete/:userId",
+  user_authentication,
+  upload.single("file"),
+  deleteProfile
+);
 
 //user follow another user :-
-router.put('/:userId/follow',user_authentication,[
-    body('userId').notEmpty().withMessage("userId is required")
-        .isMongoId().withMessage('useId is not valid')
-],userFollow)
+router.put(
+  "/follow",
+  user_authentication,
+  [
+    body("userId")
+      .notEmpty()
+      .withMessage("userId is required")
+      .isMongoId()
+      .withMessage("useId is not valid"),
+  ],
+  userFollow
+);
 
 //user unFollow another user :-
-router.put('/:userId/unfollow',user_authentication,[
-    body('userId').notEmpty().withMessage("userId is required")
-        .isMongoId().withMessage('useId is not valid')],userUnFollow)
-
+router.put(
+  "/unfollow",
+  user_authentication,
+  [
+    body("userId")
+      .notEmpty()
+      .withMessage("userId is required")
+      .isMongoId()
+      .withMessage("useId is not valid"),
+  ],
+  userUnFollow
+);
 
 export default router;

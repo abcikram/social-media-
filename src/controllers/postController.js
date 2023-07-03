@@ -3,7 +3,6 @@ import { isValidObjectId } from "mongoose";
 import userModel from "../models/userModel.js";
 
 //create post :-
-
 export const createPost = async (req, res) => {
     try {
         const userIdFromToken = req.userId;
@@ -11,9 +10,15 @@ export const createPost = async (req, res) => {
 
         const { desc, img } = req.body;
 
-        req.body.userId = userIdFromToken
+        const userObj = {};
 
-        const createPost = await postModel.create(req.body)
+        let user = {
+            desc: desc,
+            img:img,
+            userId:userIdFromToken
+        }
+        
+        const createPost = await postModel.create(user)
 
         res.status(201).json({status:true,data:createPost})
         
@@ -24,7 +29,6 @@ export const createPost = async (req, res) => {
 
 
 //getPost :-
-
 export const getPost = async (req, res) => {
     try {
         const userIdFromToken = req.userId;
@@ -44,12 +48,13 @@ export const getPost = async (req, res) => {
 
         const getUser = await userModel.findOne({ _id: userIdByParam })
 
+        //if setPrivate is false , Then another user see his/her post
         if (getUser.setPrivate == false) {
 
             return res.status(200).json({ status: true, data: getUserPost })
         }
 
-        //if setPrivate true , then I search anothr person following me or not :-
+        //if setPrivate true , then I search another person following me or not :-
 
         const searchAccount = getUser.followings.indexOf(userIdFromToken)
 
@@ -64,7 +69,6 @@ export const getPost = async (req, res) => {
 } 
 
 // UPDATE POST :-
-
 
 export const updatePost = async (req, res) => {
     try {
@@ -94,7 +98,7 @@ export const updatePost = async (req, res) => {
 } 
 
 
-//deletePost :-
+//DeletePost :-
 
 export const deletePost = async (req, res) => {
     try {
@@ -121,7 +125,7 @@ export const deletePost = async (req, res) => {
     }
 } 
 
-//like dislike post :-
+//Like dislike post :-
 
 export const likePost = async (req, res) => {
     try {
@@ -131,19 +135,20 @@ export const likePost = async (req, res) => {
         const postId = req.params.postId;
         if (!isValidObjectId(postId)) return res.status(400).json({ status: false, message: "postId is not valid" })
 
-        const findPost = await postModel.findOne({ _id:postId ,userId:userIdFromToken})
+        const findPost = await postModel.findOne({ _id:postId})
 
         // if user search self-Post account :-
         if (!findPost) {      
-            return res.status(403).json({status:true,message:"Unauthorize access"})
+            return res.status(404).json({status:true,message:"Post is not exist or deleted"})
         }
         
         if (!findPost.likes.includes(userIdFromToken)) {
             await findPost.updateOne({ $push: { likes: userIdFromToken } });
-            res.status(200).json("The post has been liked");
+
+            res.status(200).json({message:"This post has been liked"});
           } else {
-            await post.updateOne({ $pull: { likes: userIdFromToken } });
-            res.status(200).json("The post has been disliked");
+            await findPost.updateOne({ $pull: { likes: userIdFromToken } });
+            res.status(200).json({message:"The post has been disliked"});
           }
 
     } catch (error) {
@@ -152,8 +157,6 @@ export const likePost = async (req, res) => {
 } 
 
 //time-line-Post :-
-
-
 
 export const timelinePost = async (req, res) => {
     try {

@@ -1,12 +1,9 @@
 import userModel from "../models/userModel.js";
 import { validationResult } from "express-validator";
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { isValidObjectId } from "mongoose";
-
 import ImageKit from "imagekit";
-
-
 
 
 
@@ -44,6 +41,7 @@ export const userRegister = async(req,res) =>{
 
 
 //++++++++++++++++++++++++++++++++++++++++++  user - login ++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
 
 export const loginUser = async(req,res) =>{
     try {
@@ -98,7 +96,7 @@ export const loginUser = async(req,res) =>{
 }
 
 
-//++++++++++++++++++++++++++++++++++++++++++++ update user +++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//++++++++++++++++++++++++++++++++++++++++++++++ update user +++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 export const updateProfile = async (req, res) => {
     try {
@@ -111,20 +109,20 @@ export const updateProfile = async (req, res) => {
 
         const error = validationResult(req);
 
-
-
         if (!error.isEmpty()) {
             return res.status(400).json({ errors: error.array()[0].msg });
         }
         
         const {password,profilePicture} = req.body;
+        const {type} = req.query;
         let files = req.file
-        console.log('file',files);
 
         //authorization:-
         if (userIdByParam !== userIdFromToken) {
             return res.status(400).json({ status: false, message: "Unauthorize user"})
         }
+         
+        let uploadObj = {};
 
         if(password){
             const salt = await bcrypt.genSalt(10);
@@ -152,14 +150,13 @@ export const updateProfile = async (req, res) => {
             }
 
                 let uploadFile = await imagekit.upload({
-                    file: image, //required
+                    file: req.file.buffer, //required
                     fileName : 'rtr.jpg', //required
                    folder:'users/profile'
                   })
                 console.log("uploadFile",uploadFile);
 
-                let url = await uploadFile;
-                req.body.profilePicture = url;
+                req.body.profilePicture = uploadFile.url;
         }
        
         //     //  if(files.length === 0) return res.status(400).json({status:false, message : "user photo is required"})
@@ -222,7 +219,9 @@ export const getProfile = async (req, res) => {
         }
 
         const user = await userModel.findById(userIdByParam);
-        
+
+        //he code uses object destructuring to extract specific properties from the user._doc object.
+        // The properties being extracted are password and updatedAt.
         const { password, updatedAt, ...other } = user._doc;
 
         res.status(200).json({status:true,data:other});
@@ -270,31 +269,25 @@ export const userFollow = async(req,res) =>{
 
         const userIdFromToken = req.userId;
         if(!isValidObjectId(userIdFromToken)) return res.status(400).json({status:false,message:"Token is not valid"})
-
-        const userIdByParam = req.params.userId;
-        if(!isValidObjectId(userIdByParam)) return res.status(400).json({status:false,message:"params userId is not valid"})
-
+          
+       
         const error = validationResult(req);
 
         if (!error.isEmpty()) {
             return res.status(400).json({ errors: error.array()[0].msg });
         }
 
+         //anotherUserId , whose I follow :-
         const {userId} = req.body
         
-        //authorization:-
-        if (userIdByParam !== userIdFromToken) {
-            return res.status(403).json({ status: false, message: "Unauthorize user"})
-        }
-        
-        const curr_user = await userModel.findById(userIdByParam);
+        const curr_user = await userModel.findById(userIdFromToken);
 
         const anotherUser = await userModel.findOne({_id:userId });
       
-        if(anotherUser.followers.indexOf(userIdByParam) == -1)
+        if(anotherUser.followers.indexOf(userIdFromToken) == -1)
         {
             //current_user following update , the another userId will push my followings account
-            await userModel.findOneAndUpdate({_id:userIdByParam},{
+            await userModel.findOneAndUpdate({_id:userIdFromToken},{
                 $push:{
                    followings: userId
                 }
@@ -303,7 +296,7 @@ export const userFollow = async(req,res) =>{
             //anotherUser followers update , the his/her userId following section my  userId will push .
             await userModel.findOneAndUpdate({_id:userId},{
                 $push:{
-                   followers: userIdByParam
+                   followers: userIdFromToken
                 }
             })
             
@@ -318,7 +311,6 @@ export const userFollow = async(req,res) =>{
     }
 }
 
-
 //+++++++++++++++++++++++++++++++++++++++++++ user-unFollow-another-user ++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 export const userUnFollow = async(req,res) =>{
@@ -326,9 +318,6 @@ export const userUnFollow = async(req,res) =>{
 
         const userIdFromToken = req.userId;
         if(!isValidObjectId(userIdFromToken)) return res.status(400).json({status:false,message:"Token is not valid"})
-
-        const userIdByParam = req.params.userId;
-        if(!isValidObjectId(userIdByParam)) return res.status(400).json({status:false,message:"params userId is not valid"})
 
         const error = validationResult(req);
 
@@ -338,24 +327,20 @@ export const userUnFollow = async(req,res) =>{
 
         const {userId} = req.body
         
-        //authorization:-
-        if (userIdByParam !== userIdFromToken) {
-            return res.status(403).json({ status: false, message: "Unauthorize user"})
-        }
         
-        const curr_user = await userModel.findById(userIdByParam);
+        const curr_user = await userModel.findById(userIdFromToken);
 
         const anotherUser = await userModel.findOne({_id:userId });
       
       // search In my-userId(curr_user) followings part his/her(anotherUser) her user Id exist or not :-    
         if(curr_user.followings.indexOf(userId) == -1)
         {
-            return res.status(400).json({ status: false, message: "User do not follow this user"})
+            return res.status(400).json({ status: false, message: `${curr_user.name} do not follow this user`})
         }
         //after unFollow:-
 
         //current_user following update 
-            await userModel.findOneAndUpdate({_id:userIdByParam},{
+            await userModel.findOneAndUpdate({_id:userIdFromToken},{
                 $pull:{
                    followings: userId
                 }
@@ -364,7 +349,7 @@ export const userUnFollow = async(req,res) =>{
             //anotherUser followers update 
             await userModel.findOneAndUpdate({_id:userId},{
                 $pull:{
-                   followers: userIdByParam
+                   followers: userIdFromToken
                 }
             })
 

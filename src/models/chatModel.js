@@ -2,10 +2,14 @@ import mongoose from "mongoose"
 
 const chatSchema = new mongoose.Schema({
     members: Array,
-    lastMessage: {
+    lastTimeMessage: {
         type: Date,
         default: null,
-    }
+    },
+    lastText:{
+        type:String,
+        default:""
+    },
 },{
     timestamps:true,
 })
