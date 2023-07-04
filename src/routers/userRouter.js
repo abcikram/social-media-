@@ -9,15 +9,24 @@ import {
   userFollow,
   userUnFollow,
   getProfile,
+  updateProfileImage,
 } from "../controllers/userController.js";
 import { user_authentication } from "../middleware/auth.js";
 import {
   registerUserValidator,
   updateUserValidator,
 } from "../middleware/userValidators.js";
+
 import multer from "multer";
+
 const storage = multer.memoryStorage();
+
 const upload = multer({ storage: storage });
+
+
+
+
+
 
 //user register :-
 router.post("/register", registerUserValidator, userRegister);
@@ -46,12 +55,16 @@ router.get("/get/:userId", user_authentication, getProfile);
 
 //user update profile :-
 router.put(
-  "/update/:userId",
+  "/update-profile",
   upload.single("file"),
   user_authentication,
   updateUserValidator,
   updateProfile
 );
+
+//user update profile or cover Image :- 
+router.put('/update-image', upload.single("file"), user_authentication, updateProfileImage)
+
 
 //user delete profile :-
 router.delete(

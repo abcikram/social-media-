@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { isValidObjectId } from "mongoose";
 import ImageKit from "imagekit";
+import { uploadImage } from "../config/uploadImage-kit.js";
 
 
 
@@ -17,8 +18,7 @@ export const userRegister = async(req,res) =>{
             return res.status(400).json({ errors: error.array()[0].msg });
         }
 
-        const { name , phone , email, password} = req.body
-
+        const { name , phone , email, password , city , country } = req.body
 
         let phoneDuplicate = await userModel.findOne({phone:phone})
         if (phoneDuplicate) return res.status(400).json({ status: false, message: "Phone number is already exist" })
@@ -26,11 +26,22 @@ export const userRegister = async(req,res) =>{
         let emailDuplicate = await userModel.findOne({ email: email })
         if (emailDuplicate) return res.status(400).json({ status: false, message: "User email is already exist" })
 
+        //encrypted password :-
         const salt = await bcrypt.genSalt(10);
         const newPassword = await bcrypt.hash(password, salt);
-        req.body.password = newPassword;
+      
+        const user = {
+            name: name,
+            phone: phone,
+            email: email,
+            password: newPassword,
+        }
 
-        const userCreate = await userModel.create(req.body);
+        if(city)  user.city = city;
+
+        if(country) user.country = country; 
+       
+        const userCreate = await userModel.create(user);
 
         res.status(201).json({ status: true, message:`${name} is created successfully`, data: userCreate })
 
@@ -96,7 +107,7 @@ export const loginUser = async(req,res) =>{
 }
 
 
-//++++++++++++++++++++++++++++++++++++++++++++++ update user +++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//++++++++++++++++++++++++++++++++++++++++++++++ setProfile user +++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 export const updateProfile = async (req, res) => {
     try {
@@ -104,97 +115,87 @@ export const updateProfile = async (req, res) => {
         const userIdFromToken = req.userId;
         if(!isValidObjectId(userIdFromToken)) return res.status(400).json({status:false,message:"Token is not valid"})
 
-        const userIdByParam = req.params.userId;
-        if(!isValidObjectId(userIdByParam)) return res.status(400).json({status:false,message:"userId By Param is not valid"})
-
         const error = validationResult(req);
 
         if (!error.isEmpty()) {
             return res.status(400).json({ errors: error.array()[0].msg });
         }
         
-        const {password,profilePicture} = req.body;
-        const {type} = req.query;
-        let files = req.file
-
-        //authorization:-
-        if (userIdByParam !== userIdFromToken) {
-            return res.status(400).json({ status: false, message: "Unauthorize user"})
-        }
+        const {name,phone,email,country,city} = req.body;
          
         let uploadObj = {};
 
-        if(password){
-            const salt = await bcrypt.genSalt(10);
-            const newPassword = await bcrypt.hash(password, salt);
-            req.body.password = newPassword;
-        }
-
-        const imagekit = new ImageKit({
-            publicKey:  'public_D7mlT470io9+XU3X7NxIqppBRS4=',
-            privateKey : "private_RAnLtGjFC2SsAz6aOZ9g4/N2308=",
-            urlEndpoint :"https://ik.imagekit.io/oxtdhgpbm/"
-        });
+        if (name) uploadObj.name = name;
+        if (phone) uploadObj.phone = phone
+        if (email) uploadObj.email = email
+        if (country) uploadObj.country = country
+        if (city) uploadObj.city = city
         
- 
-        if (files) {
-            let image = files;
-
-            console.log(image);
-            
-            if (image === undefined) {
-                return res.status(400).send({
-                    status: false,
-                    message: "Please Provide A File To Update...",
-                });
-            }
-
-                let uploadFile = await imagekit.upload({
-                    file: req.file.buffer, //required
-                    fileName : 'rtr.jpg', //required
-                   folder:'users/profile'
-                  })
-                console.log("uploadFile",uploadFile);
-
-                req.body.profilePicture = uploadFile.url;
-        }
-       
-        //     //  if(files.length === 0) return res.status(400).json({status:false, message : "user photo is required"})
-        // if (profilePicture) {
-        //     const validImage = profilePicture.mimetype.split("/");
-            
-        //     console.log("validImage", validImage);
-
-        //     if (validImage[0] != "image") {
-        //         return res
-        //             .status(400)
-        //             .send({ status: false, message: "Please provide a valid image" });
-        //     }
-              
-
-        //         let uploadFile = await imagekit.upload({
-        //             file : files, //required
-        //             fileName : validImage.originalname, //required
-                   
-        //           }, function(error, result) {
-        //             if(error) console.log(error);
-        //             else console.log(result);
-        //         });
-        //             console.log(uploadFile);
-        //           req.body.profilePicture = uploadFile
-        //     }
-            
-                
-              
-        
-
-        const userUpdate = await userModel.findByIdAndUpdate(userIdByParam, {
-            $set:req.body
+        const userUpdate = await userModel.findByIdAndUpdate(userIdFromToken, {
+            $set:uploadObj
         }, {
             new: true
         });
 
-        res.status(200).json({ status: true, message: `${userUpdate.name} has been updated successfully`, data: userUpdate })
+        res.status(200).json({
+            status: true,
+            message: `${userUpdate.name} has been updated profile successfully`,
+            data: userUpdate
+        })
+
+    } catch (error) {
+        return res.status(500).json({ status: false, message: error.message });
+    }
+}
+
+
+//++++++++++++++++++++++++++++++++++++++++++++ update Image +++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+export const updateProfileImage = async (req, res) => {
+    try {
+
+        const userIdFromToken = req.userId;
+
+        if (!isValidObjectId(userIdFromToken))
+            return res.status(400).json({ status: false, message: "Token is not valid" })
+
+        const { type } = req.query;
+
+        let file = req.file
+
+        // console.log("file",file);
+
+        if (type != ('profilePicture' || 'coverPicture'))
+            return res.status(400).json("Type is only profile and coverPicture")
+
+        let uploadObj = {};
+
+        if (!file) return res.status(400).json({ status: false, message: 'Please Provide A File To Update...' })
+
+        //uploadImage is a function which is imported from uploadTrialRoute.js file
+        //calling this function , we get image url of the uploded image .
+
+        const imageUrl = await uploadImage(file)
+
+        //console.log(imageUrl);
+
+        if (type == 'profilePicture' && file) {
+
+            uploadObj.profilePicture = imageUrl;
+        }
+
+        if (type == 'coverPicture' && file) {
+            uploadObj.coverPicture = imageUrl;
+        }
+
+        //update profile or cover Image :-
+        const userUpdate = await userModel.findByIdAndUpdate("649c136a31e08666b8433b83", {
+            $set: uploadObj
+        }, {
+            new: true
+        });
+
+        res.status(200).json({ status: true, message: `${userUpdate.name} has been updated picture`, data: userUpdate })
 
     } catch (error) {
         return res.status(500).json({ status: false, message: error.message });
@@ -261,6 +262,7 @@ export const deleteProfile = async (req, res) => {
         return res.status(500).json({ status: false, message: error.message });
     }
 }
+
 
 //+++++++++++++++++++++++++++++++++++++++++++ user-follow-another-user ++++++++++++++++++++++++++++++++++++++++++++++++++//
 

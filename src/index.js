@@ -9,7 +9,7 @@ import commentRouter from './routers/commentRouter.js';
 import replyRouter from './routers/replyRouter.js'
 import chatRouter from './routers/chatRouter.js'
 import messageRouter from './routers/messageRouter.js'
-import uploadTrialRoute from './routers/uploadTrialRoute.js'
+
 
 
 
@@ -29,7 +29,6 @@ app.use('/api/comment',commentRouter)
 app.use('/api/reply',replyRouter)
 app.use('/api/chat',chatRouter)
 app.use('/api/message',messageRouter)
-app.use('/api/image',uploadTrialRoute)
 
 
 const PORT =  process.env.PORT || 8002;
