@@ -10,6 +10,7 @@ import {
   userUnFollow,
   getProfile,
   updateProfileImage,
+  deleteImage,
 } from "../controllers/userController.js";
 import { user_authentication } from "../middleware/auth.js";
 import {
@@ -17,15 +18,15 @@ import {
   updateUserValidator,
 } from "../middleware/userValidators.js";
 
+
+//for file uploading we are using the multer :-
 import multer from "multer";
-
 const storage = multer.memoryStorage();
-
 const upload = multer({ storage: storage });
 
 
 
-
+//++++++++++++++++++++++++++++++++++++++++++ router logic +++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 
 //user register :-
@@ -68,12 +69,14 @@ router.put('/update-image', upload.single("file"), user_authentication, updatePr
 
 //user delete profile :-
 router.delete(
-  "/delete/:userId",
+  "/delete/profile",
   user_authentication,
-  upload.single("file"),
   deleteProfile
 );
 
+
+// if user delete Image :-
+router.delete('/delete/image',upload.single('file'),user_authentication,deleteImage)
 //user follow another user :-
 router.put(
   "/follow",

@@ -1,26 +1,49 @@
 import postModel from "../models/postModels.js"; 
 import { isValidObjectId } from "mongoose";
 import userModel from "../models/userModel.js";
+import { deleteImage, uploadImage } from "../config/uploadImage-kit.js";
 
 //create post :-
 export const createPost = async (req, res) => {
     try {
         const userIdFromToken = req.userId;
-        if (!isValidObjectId(userIdFromToken)) return res.status(400).json({ status: false, message: "Token is not valid" })
+        if (!isValidObjectId(userIdFromToken)) return res.status(400).json({ status: false,
+             message: "Token is not valid"
+        })
 
-        const { desc, img } = req.body;
+        const { desc } = req.body;
 
-        const userObj = {};
+        const {type} = req.query;
 
-        let user = {
-            desc: desc,
-            img:img,
-            userId:userIdFromToken
-        }
+        // console.log(type);
         
-        const createPost = await postModel.create(user)
+        let file = req.file;     
+              
+        //we are not use create method for getting postId before save the mongoDB , so that why we use save method 
+        let postObj = new postModel({
+            desc:desc,
+            userId:userIdFromToken
+        })
+        
+        // console.log(postObj);
 
-        res.status(201).json({status:true,data:createPost})
+        //find the postId from the postObj before saving on mongoDB 
+        const postId = postObj._id
+ 
+        if(file){
+            if(type.toLowerCase() != 'post'){
+                return res.status(400).json("Type is only post")
+            }
+            var imageUrl = await uploadImage(userIdFromToken,type,file,postId)
+        } 
+        
+        postObj.img.imageURL = imageUrl.url
+        postObj.img.fileId = imageUrl.fileId
+
+        //save the postObj in mongoDB
+        await postObj.save();
+
+        res.status(201).json({status:true,message:"user's post is created",data:postObj})
         
     } catch (error) {
         return res.status(500).json({ status: false, message: error.message });
@@ -78,6 +101,8 @@ export const updatePost = async (req, res) => {
         const postId = req.params.postId;
         if (!isValidObjectId(postId)) return res.status(400).json({ status: false, message: "postId is not valid" })
 
+        const { desc } = req.body;
+
         const findPost = await postModel.findOne({ _id:postId ,userId:userIdFromToken})
 
         // if user search self-Post account :-
@@ -85,13 +110,13 @@ export const updatePost = async (req, res) => {
             return res.status(403).json({status:true,message:"Unauthorize access"})
         }
         
+        // user only update the desc of the post , not image :-
         const updatePost = await postModel.findOneAndUpdate({_id:postId},{
-            $set: req.body,
+            $set:{desc},
         },{new:true}) 
 
-        return res.status(200).json({ status: true, data: updatePost })
+        return res.status(200).json({ status: true,message:"User update his post", data: updatePost })
         
-
     } catch (error) {
         return res.status(500).json({ status: false, message: error.message });
     }
@@ -112,12 +137,18 @@ export const deletePost = async (req, res) => {
 
         // if user search self-Post account :-
         if (!findPost) {      
-            return res.status(403).json({status:true,message:"Unauthorize access"})
+            return res.status(403).json({status:true,message:"Unauthorize access or post is not found or already deleted"})
         }
         
+        //find the fileId for delete image  
+        const fileId = findPost.img.fileId
+        
+        //calling delete Image by fileId 
+        const a = await deleteImage(fileId);
+
         const postDelete = await postModel.findOneAndDelete({_id:postId}) 
 
-        return res.status(200).json({ status: true,message:`the post is successfully deleted`, data: postDelete })
+        return res.status(200).json({ status: true,message:`use is delete this post successfully` })
         
 
     } catch (error) {

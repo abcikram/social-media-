@@ -26,12 +26,30 @@ const userSchema = new mongoose.Schema(
       default:false,
     },
     profilePicture: {
-      type: String,
-      default: "",
+      type: [
+        {
+          ImageURL: String,
+          FileId: String,
+          active: {
+            type:Boolean,
+            default:true,
+          },
+        }
+      ],
+      default: []
     },
-    coverPicture: {
-      type: String,
-      default: "",
+    coverPicture:{
+      type: [
+        {
+          ImageURL: String,
+          FileId: String,
+          active: {
+            type:Boolean,
+            default:true,
+          },
+        }
+      ],
+      default: []
     },
     followers:{
       type: Array,
