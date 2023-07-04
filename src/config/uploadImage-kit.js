@@ -59,8 +59,8 @@ export const uploadImage = async function (userId,type,file,postId) {
 
 export const deleteImage = async function(fileId){
     const imagekit = new ImageKit({
-        publicKey: process.env.publicKey,
-        privateKey: process.env.privateKey,
+        publicKey: process.env.PUBLICKEY,
+        privateKey: process.env.PRIVATEKEY,
         urlEndpoint: process.env.URL_END_POINT
     })
 

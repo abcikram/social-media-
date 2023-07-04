@@ -345,6 +345,8 @@ export const getProfile = async (req, res) => {
       return res
         .status(400)
         .json({ status: false, message: "userId By Param is not valid" });
+    
+    console.log(userIdByParam)
 
     //authorization:-
     if (userIdByParam !== userIdFromToken) {
