@@ -7,8 +7,8 @@ const storage = multer.memoryStorage();
 export const uploadImage = async function (userId,type,file,postId) {
    
     const imagekit = new ImageKit({
-        publicKey: process.env.publicKey,
-        privateKey: process.env.privateKey,
+        publicKey: process.env.PUBLICKEY,
+        privateKey: process.env.PRIVATEKEY,
         urlEndpoint: process.env.URL_END_POINT
     })
   
