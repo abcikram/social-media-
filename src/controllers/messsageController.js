@@ -1,41 +1,66 @@
 import { validationResult } from "express-validator";
 import messageModel from "../models/messageModel.js";
 import chatModel from "../models/chatModel.js";
+import { isValidObjectId } from "mongoose";
 
-//createMessage :-
+
+//sendMessage/created Message :-
 
 export const createMessage = async(req,res) =>{
     try {
+        const userIdFromToken = req.userId;
+
+        if(!isValidObjectId(userIdFromToken)) return res.status(400).json("token is not valid")
+
         const error = validationResult(req);
 
         if (!error.isEmpty()) {
             return res.status(400).json({ errors: error.array()[0].msg });
         }
+
         const { chatId, senderId, text } = req.body;
 
-        const FindProperChat = await chatModel.findOne({
-            _id: chatId, members: {
-            $in:[senderId]
+        const FindChat =  await chatModel.findOne({
+            members:{$all :[userIdFromToken,senderId]}
+        })
+        
+        console.log(FindChat);
+
+        let messageObj={}
+        //if findChat is not exist , Then create Chat :-
+        if(!FindChat){
+
+          //if findChat is not exist , Then create Chat :-
+            
+          const newChat = new chatModel({
+                members:[userIdFromToken,senderId],
+                lastTimeMessage:Date.now(),
+                lastText:text,
+            })
+            const createChat = await newChat.save(); //chat is created in chatSchema
+            
+            // in create messageObj where chatId we put latest created chatId  
+            messageObj ={
+                chatId:createChat._id,
+                senderId:senderId,
+                text:text
             }
-        })
-        
-        if (!FindProperChat) return res.status(404).json({
-            status: false,
-            message: "This sender is not belongs to this chatId"
-        })
-
-        const message ={
-            chatId:chatId,
-            senderId:senderId,
-            text:text
         }
+        else{
+            // if chatId is already exist then update lastTimeMessage , lastText chat in chatSchema . 
+            await chatModel.findByIdAndUpdate(chatId, {
+                $set:{ lastTimeMessage : Date.now() , lastText : text}
+            });
+            messageObj={
+                chatId:FindChat._id,
+                senderId:senderId,
+                text:text
+            }
+        }
+         
+        // Created the chat , when ever chatId found or not .
+        const createMessage = await messageModel.create(messageObj) 
 
-        await chatModel.findByIdAndUpdate(chatId, {
-            $set:{ lastMessage : Date.now()}
-        });
-
-        const createMessage = await messageModel.create(message) 
-        
         res.status(201).json(createMessage)
 
     } catch (error) {

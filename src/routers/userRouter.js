@@ -1,15 +1,36 @@
 import express from "express";
 import { body } from "express-validator";
 const router = express.Router();
-import { deleteProfile, loginUser, updateProfile, userRegister,userFollow, userUnFollow, getProfile } from "../controllers/userController.js";
+import {
+  deleteProfile,
+  loginUser,
+  updateProfile,
+  userRegister,
+  userFollow,
+  userUnFollow,
+  getProfile,
+  updateProfileImage,
+  deleteImage,
+} from "../controllers/userController.js";
 import { user_authentication } from "../middleware/auth.js";
-import { registerUserValidator , updateUserValidator} from "../middleware/userValidators.js";
+import {
+  registerUserValidator,
+  updateUserValidator,
+} from "../middleware/userValidators.js";
+
+
+//for file uploading we are using the multer :-
 import multer from "multer";
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+
+
+//++++++++++++++++++++++++++++++++++++++++++ router logic +++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+
 //user register :-
-router.post("/register",registerUserValidator,userRegister);
+router.post("/register", registerUserValidator, userRegister);
 
 // user Login :-
 router.post(
@@ -31,27 +52,57 @@ router.post(
   loginUser
 );
 
-
-
-router.get('/get/:userId',user_authentication,getProfile)
+router.get("/get/:userId", user_authentication, getProfile);
 
 //user update profile :-
-router.put("/update/:userId",upload.single('file'),user_authentication,updateUserValidator,updateProfile);
+router.put(
+  "/update-profile",
+  upload.single("file"),
+  user_authentication,
+  updateUserValidator,
+  updateProfile
+);
+
+//user update profile or cover Image :- 
+router.put('/update-image', upload.single("file"), user_authentication, updateProfileImage)
 
 
 //user delete profile :-
-router.delete("/delete/:userId",user_authentication,upload.single('file'),deleteProfile);
+router.delete(
+  "/delete/profile",
+  user_authentication,
+  deleteProfile
+);
 
+
+// if user delete Image :-
+router.delete('/delete/image',upload.single('file'),user_authentication,deleteImage)
 //user follow another user :-
-router.put('/:userId/follow',user_authentication,[
-    body('userId').notEmpty().withMessage("userId is required")
-        .isMongoId().withMessage('useId is not valid')
-],userFollow)
+router.put(
+  "/follow",
+  user_authentication,
+  [
+    body("userId")
+      .notEmpty()
+      .withMessage("userId is required")
+      .isMongoId()
+      .withMessage("useId is not valid"),
+  ],
+  userFollow
+);
 
 //user unFollow another user :-
-router.put('/:userId/unfollow',user_authentication,[
-    body('userId').notEmpty().withMessage("userId is required")
-        .isMongoId().withMessage('useId is not valid')],userUnFollow)
-
+router.put(
+  "/unfollow",
+  user_authentication,
+  [
+    body("userId")
+      .notEmpty()
+      .withMessage("userId is required")
+      .isMongoId()
+      .withMessage("useId is not valid"),
+  ],
+  userUnFollow
+);
 
 export default router;

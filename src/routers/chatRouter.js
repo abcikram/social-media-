@@ -1,26 +1,18 @@
 import express from "express";
-import { body, param } from "express-validator";
+import { param } from "express-validator";
 import { user_authentication } from "../middleware/auth.js";
-import { createChat, findChat, findUserChat } from "../controllers/chatController.js";
+import { fetchUserChat, findChat } from "../controllers/chatController.js";
 const router = express.Router();
 
 //createChat :- 
-router.post('/',[
-    body('firstId').notEmpty().withMessage('firstId is required')
-        .isMongoId().withMessage("firstId is not valid"),
-    body('secondId').notEmpty().withMessage("second Id is required")
-        .isMongoId().withMessage('secondId is not valid'),
-],createChat)
+// we are create Chat logic in createMessage API.  
 
-//findUserChat :-
-router.get('/:userId',[
-    param('userId').notEmpty().withMessage('userId is required')
-    .isMongoId().withMessage("userId is not valid"),
-],findUserChat) 
+//fetchUserChat , user's all chat:-
+router.get('/get/all',user_authentication,fetchUserChat) 
 
 
-//findChat :-
-router.get('/get/:firstId/:secondId',[
+//find User Particular Chat :-
+router.get('/get/:firstId/:secondId',user_authentication,[
     param('firstId').notEmpty().withMessage('firstId is required')
         .isMongoId().withMessage("firstId is not valid"),
     param('secondId').notEmpty().withMessage("second Id is required")
